@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile for leaderboard and progress tracking.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID from Firebase Auth." },
+        "displayName": { "type": "string", "description": "User's public display name." },
+        "xp": { "type": "number", "description": "Total experience points." },
+        "avatar": { "type": "string", "description": "User's chosen avatar emoji." },
+        "lastUpdated": { "type": "string", "format": "date-time", "description": "Last time the profile was updated." }
+      },
+      "required": ["uid", "displayName", "xp"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "Collection of user profiles for the leaderboard."
+    }
+  }
+}
