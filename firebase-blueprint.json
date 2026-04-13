@@ -9,9 +9,12 @@
         "displayName": { "type": "string", "description": "User's public display name." },
         "xp": { "type": "number", "description": "Total experience points." },
         "avatar": { "type": "string", "description": "User's chosen avatar emoji." },
+        "streak": { "type": "number", "description": "Current login streak." },
+        "completedTopicsCount": { "type": "number", "description": "Number of topics completed." },
+        "settings": { "type": "object", "description": "User UI settings." },
         "lastUpdated": { "type": "string", "format": "date-time", "description": "Last time the profile was updated." }
       },
-      "required": ["uid", "displayName", "xp"]
+      "required": ["uid", "displayName", "xp", "streak", "completedTopicsCount"]
     }
   },
   "firestore": {

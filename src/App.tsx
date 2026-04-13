@@ -51,7 +51,7 @@ import { Certificate } from './components/Certificate';
 import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
 import { cn } from './lib/utils';
-import { auth, db, syncUserProfile } from './lib/firebase';
+import { auth, db, syncUserProfile, handleFirestoreError, OperationType } from './lib/firebase';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -179,6 +179,7 @@ export default function App() {
       setFirebaseUser(u);
       if (u && !u.isAnonymous) {
         // Fetch user data from Firestore to sync local state
+        const path = `users/${u.uid}`;
         try {
           const userDoc = await getDoc(doc(db, 'users', u.uid));
           if (userDoc.exists()) {
@@ -191,7 +192,7 @@ export default function App() {
             }));
           }
         } catch (error) {
-          console.error("Error fetching user data:", error);
+          handleFirestoreError(error, OperationType.GET, path);
         }
       }
       setLoadingAuth(false);
@@ -565,7 +566,7 @@ export default function App() {
     );
   }
 
-  if (!firebaseUser || firebaseUser.isAnonymous) {
+  if (!firebaseUser) {
     return (
       <Auth 
         onSuccess={handleAuthSuccess} 

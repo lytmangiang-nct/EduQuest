@@ -29,6 +29,7 @@ import {
   updateProfile, 
   sendPasswordResetEmail,
   signInWithPopup,
+  signInAnonymously,
   GoogleAuthProvider,
   setPersistence,
   browserLocalPersistence,
@@ -81,7 +82,12 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
     setLoading(true);
 
     try {
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      try {
+        await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      } catch (pErr) {
+        console.warn('Persistence error:', pErr);
+        // Continue anyway, persistence might be blocked by browser settings
+      }
       
       if (mode === 'signup') {
         if (!username.trim()) throw new Error('Vui lòng nhập tên người dùng');
@@ -103,6 +109,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
           xp: 0,
           coins: 0,
           streak: 0,
+          completedTopicsCount: 0,
           createdAt: new Date().toISOString()
         });
 
@@ -130,6 +137,8 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
       if (err.code === 'auth/invalid-credential') errorMessage = 'Email hoặc mật khẩu không chính xác.';
       if (err.code === 'auth/user-not-found') errorMessage = 'Không tìm thấy tài khoản với email này.';
       if (err.code === 'auth/wrong-password') errorMessage = 'Mật khẩu không chính xác.';
+      if (err.code === 'auth/operation-not-allowed') errorMessage = 'Phương thức đăng nhập này chưa được bật. Vui lòng liên hệ quản trị viên.';
+      if (err.code === 'auth/popup-blocked') errorMessage = 'Cửa sổ đăng nhập bị chặn. Vui lòng cho phép popup và thử lại.';
       if (err.message) errorMessage = err.message;
       
       setError(errorMessage);
@@ -157,6 +166,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
           xp: 0,
           coins: 0,
           streak: 0,
+          completedTopicsCount: 0,
           createdAt: new Date().toISOString()
         });
       }
@@ -165,7 +175,36 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
       onSuccess(userData);
     } catch (err: any) {
       console.error('Google Login Error:', err);
-      setError('Không thể đăng nhập bằng Google. Vui lòng thử lại.');
+      if (err.code === 'auth/popup-blocked') {
+        setError('Cửa sổ đăng nhập bị chặn. Vui lòng cho phép popup và thử lại.');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('Đăng nhập bằng Google chưa được cấu hình đúng. Vui lòng thử cách khác.');
+      } else {
+        setError('Không thể đăng nhập bằng Google. Vui lòng thử lại.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnonymousLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const userCredential = await signInAnonymously(auth);
+      const user = userCredential.user;
+      
+      onSuccess({ 
+        uid: user.uid, 
+        displayName: 'Khách', 
+        avatar: '👤',
+        xp: 0,
+        coins: 0,
+        streak: 0
+      });
+    } catch (err: any) {
+      console.error('Anonymous Login Error:', err);
+      setError('Không thể đăng nhập chế độ khách. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -401,15 +440,26 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
             )}
 
             {mode !== 'forgot-password' && (
-              <button 
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 hover:border-blue-500/50 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 dark:text-white"
-              >
-                <Chrome className="w-5 h-5 text-blue-500" />
-                Tiếp tục với Google
-              </button>
+              <div className="flex flex-col gap-3">
+                <button 
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                  className="w-full bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 hover:border-blue-500/50 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 dark:text-white"
+                >
+                  <Chrome className="w-5 h-5 text-blue-500" />
+                  Tiếp tục với Google
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleAnonymousLogin}
+                  disabled={loading}
+                  className="w-full bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 text-xs uppercase tracking-widest"
+                >
+                  <UserIcon className="w-4 h-4" />
+                  Dùng thử chế độ khách
+                </button>
+              </div>
             )}
           </form>
 

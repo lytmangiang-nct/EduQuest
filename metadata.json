@@ -1,5 +1,5 @@
 {
-  "name": "Remix: EduQuest: Tin Học 11",
-  "description": "Hệ thống học tập giải trí môn Tin học lớp 11 với cơ chế thành tích và phần thưởng hấp dẫn.",
+  "name": "EduQuest: Tin Học THPT",
+  "description": "Nền tảng học tập tương tác môn Tin học lớp 10, 11, 12 với trò chơi, AI chatbot và hệ thống vinh danh.",
   "requestFramePermissions": []
 }
