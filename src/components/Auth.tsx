@@ -185,13 +185,19 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
       onSuccess(userData);
     } catch (err: any) {
       console.error('Google Login Error:', err);
+      let errorMessage = 'Không thể đăng nhập bằng Google. Vui lòng thử lại.';
+      
       if (err.code === 'auth/popup-blocked') {
-        setError('Cửa sổ đăng nhập bị chặn. Vui lòng cho phép popup và thử lại.');
+        errorMessage = 'Cửa sổ đăng nhập bị chặn. Vui lòng cho phép popup và thử lại.';
       } else if (err.code === 'auth/operation-not-allowed') {
-        setError('Đăng nhập bằng Google chưa được cấu hình đúng. Vui lòng thử cách khác.');
-      } else {
-        setError('Không thể đăng nhập bằng Google. Vui lòng thử lại.');
+        errorMessage = 'Đăng nhập bằng Google chưa được bật trong Firebase Console.';
+      } else if (err.code === 'auth/unauthorized-domain') {
+        errorMessage = 'Tên miền này chưa được cấp phép trong Firebase Console. Vui lòng thêm tên miền của ứng dụng vào danh sách Authorized Domains.';
+      } else if (err.message) {
+        errorMessage = `Lỗi Google Login: ${err.message}`;
       }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
