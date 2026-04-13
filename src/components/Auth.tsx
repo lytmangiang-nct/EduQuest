@@ -81,6 +81,12 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
     setMessage(null);
     setLoading(true);
 
+    if (!auth) {
+      setError('Hệ thống đang gặp sự cố kết nối. Vui lòng thử lại sau hoặc dùng Chế độ khách.');
+      setLoading(false);
+      return;
+    }
+
     try {
       try {
         await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
@@ -148,6 +154,10 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
   };
 
   const handleGoogleLogin = async () => {
+    if (!auth) {
+      setError('Hệ thống đang gặp sự cố kết nối. Vui lòng thử lại sau.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -191,17 +201,58 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
     setLoading(true);
     setError(null);
     try {
+      if (!auth) {
+        // Fallback to local user if Firebase is completely down
+        const localUser = {
+          uid: 'guest_' + Math.random().toString(36).substr(2, 9),
+          displayName: 'Khách (Ngoại tuyến)',
+          avatar: '👤',
+          xp: 0,
+          coins: 0,
+          streak: 0,
+          completedTopicsCount: 0,
+          studyHistory: [],
+          earnedBadges: [],
+          earnedAchievements: [],
+          achievementProgress: {},
+          achievementCompletions: {},
+          settings: {
+            darkMode: false,
+            textColor: 'default',
+            fontFamily: 'font-sans',
+            fontSize: 'medium'
+          }
+        };
+        onSuccess(localUser);
+        return;
+      }
       const userCredential = await signInAnonymously(auth);
       const user = userCredential.user;
       
-      onSuccess({ 
+      // Check if user exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          displayName: 'Khách',
+          avatar: '👤',
+          xp: 0,
+          coins: 0,
+          streak: 0,
+          completedTopicsCount: 0,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      const userData = userDoc.exists() ? userDoc.data() : { 
         uid: user.uid, 
         displayName: 'Khách', 
         avatar: '👤',
         xp: 0,
         coins: 0,
         streak: 0
-      });
+      };
+      onSuccess(userData);
     } catch (err: any) {
       console.error('Anonymous Login Error:', err);
       setError('Không thể đăng nhập chế độ khách. Vui lòng thử lại.');

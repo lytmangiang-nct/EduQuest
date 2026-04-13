@@ -175,9 +175,14 @@ export default function App() {
   } | null>(null);
 
   useEffect(() => {
+    if (!auth) {
+      console.error("Firebase Auth not initialized");
+      setLoadingAuth(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setFirebaseUser(u);
-      if (u && !u.isAnonymous) {
+      if (u && !u.isAnonymous && db) {
         // Fetch user data from Firestore to sync local state
         const path = `users/${u.uid}`;
         try {
@@ -504,7 +509,9 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      if (auth) {
+        await signOut(auth);
+      }
       setFirebaseUser(null);
       localStorage.removeItem('eduquest_user');
       // Reset local user state to default
