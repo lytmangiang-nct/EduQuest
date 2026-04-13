@@ -167,34 +167,46 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, darkMode, onToggleDarkMod
 
       // Check if user exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', user.uid));
+      let userData;
+      
       if (!userDoc.exists()) {
-        await setDoc(doc(db, 'users', user.uid), {
+        userData = {
           uid: user.uid,
-          displayName: user.displayName,
+          displayName: user.displayName || 'Người dùng Google',
           email: user.email,
           avatar: user.photoURL || '👨‍💻',
           xp: 0,
           coins: 0,
           streak: 0,
           completedTopicsCount: 0,
-          createdAt: new Date().toISOString()
-        });
+          createdAt: new Date().toISOString(),
+          settings: {
+            darkMode: false,
+            textColor: 'default',
+            fontFamily: 'font-sans',
+            fontSize: 'medium'
+          }
+        };
+        await setDoc(doc(db, 'users', user.uid), userData);
+      } else {
+        userData = userDoc.data();
       }
       
-      const userData = userDoc.exists() ? userDoc.data() : { displayName: user.displayName };
-      onSuccess(userData);
+      onSuccess({ ...userData, displayName: user.displayName || userData.displayName });
     } catch (err: any) {
       console.error('Google Login Error:', err);
       let errorMessage = 'Không thể đăng nhập bằng Google. Vui lòng thử lại.';
       
-      if (err.code === 'auth/popup-blocked') {
-        errorMessage = 'Cửa sổ đăng nhập bị chặn. Vui lòng cho phép popup và thử lại.';
+      if (err.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Bạn đã đóng cửa sổ đăng nhập trước khi hoàn tất. Vui lòng giữ cửa sổ mở và thử lại.';
+      } else if (err.code === 'auth/popup-blocked') {
+        errorMessage = 'Trình duyệt đã chặn cửa sổ đăng nhập. Vui lòng cho phép popup cho trang web này.';
       } else if (err.code === 'auth/operation-not-allowed') {
-        errorMessage = 'Đăng nhập bằng Google chưa được bật trong Firebase Console.';
+        errorMessage = 'Đăng nhập bằng Google chưa được bật. Vui lòng sử dụng Email hoặc Chế độ khách.';
       } else if (err.code === 'auth/unauthorized-domain') {
-        errorMessage = 'Tên miền này chưa được cấp phép trong Firebase Console. Vui lòng thêm tên miền của ứng dụng vào danh sách Authorized Domains.';
+        errorMessage = 'Tên miền này chưa được cấp phép để đăng nhập Google.';
       } else if (err.message) {
-        errorMessage = `Lỗi Google Login: ${err.message}`;
+        errorMessage = `Lỗi: ${err.message}`;
       }
       
       setError(errorMessage);

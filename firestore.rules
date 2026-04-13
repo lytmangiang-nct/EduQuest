@@ -54,5 +54,9 @@ service cloud.firestore {
       allow create: if isOwner(uid) && isValidUser(request.resource.data);
       allow update: if isOwner(uid) && isValidUser(request.resource.data);
     }
+
+    match /test/connection {
+      allow read: if true;
+    }
   }
 }
